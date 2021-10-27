@@ -1,2 +1,2 @@
-# the-go-programming-language
-code for learning
+# The Way To Go
+code when learning Go
