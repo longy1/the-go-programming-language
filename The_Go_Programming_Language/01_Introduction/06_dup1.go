@@ -1,3 +1,4 @@
+// count repeat line in stdin
 package main
 
 import (
