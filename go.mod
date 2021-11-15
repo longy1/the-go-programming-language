@@ -1,4 +1,4 @@
-module The_Go_Programming_Language
+module The.Go.Programming.Language
 
 go 1.15
 
