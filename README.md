@@ -1,2 +1,2 @@
-# The Way To Go
+# The Go Programming Language
 code when learning Go
