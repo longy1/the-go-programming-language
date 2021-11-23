@@ -50,19 +50,20 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 	}
-	switch q["sorted"][0] {
-	case "length":
-		OrderedBy(length).Sort(testTracks)
-	case "year":
-		OrderedBy(year).Sort(testTracks)
-	case "album":
-		OrderedBy(album).Sort(testTracks)
-	case "artist":
-		OrderedBy(artist).Sort(testTracks)
-	case "title":
-		OrderedBy(title).Sort(testTracks)
+	if len(q["sorted"]) > 0 {
+		switch q["sorted"][0] {
+		case "length":
+			OrderedBy(length).Sort(testTracks)
+		case "year":
+			OrderedBy(year).Sort(testTracks)
+		case "album":
+			OrderedBy(album).Sort(testTracks)
+		case "artist":
+			OrderedBy(artist).Sort(testTracks)
+		case "title":
+			OrderedBy(title).Sort(testTracks)
+		}
 	}
-
 	resp := template.Must(template.New("response").Parse(templ))
 	if err := resp.Execute(w, testTracks); err != nil {
 		log.Fatal(err)
