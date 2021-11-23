@@ -72,5 +72,5 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func StartServer() {
 	http.HandleFunc("/", indexHandler)
-	log.Fatal(http.ListenAndServe("127.0.0.1:1088", nil))
+	log.Fatal(http.ListenAndServe("127.0.0.1:1100", nil))
 }
