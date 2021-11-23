@@ -70,3 +70,9 @@ func (x *multipleSort) Swap(i, j int) { x.t[i], x.t[j] = x.t[j], x.t[i] }
 func OrderedBy(less ...func(x, y *Track) bool) *multipleSort {
 	return &multipleSort{lessFunc: less}
 }
+
+func title(x, y *Track) bool  { return x.Title < y.Title }
+func artist(x, y *Track) bool { return x.Artist < y.Artist }
+func album(x, y *Track) bool  { return x.Album < y.Album }
+func year(x, y *Track) bool   { return x.Year < y.Year }
+func length(x, y *Track) bool { return x.Length < y.Length }
