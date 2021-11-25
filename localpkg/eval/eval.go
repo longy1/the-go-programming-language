@@ -1,15 +1,20 @@
 package eval
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"strings"
 )
 
+// wraps control text line wrap
+var wraps int
+
 type Expr interface {
 	// Eval returns the value of this Expr in the environment env.
 	Eval(env Env) float64
 	Check(vars map[Var]bool) error
+	String() string
 }
 
 type Var string
@@ -23,6 +28,10 @@ func (v Var) Check(vars map[Var]bool) error {
 	return nil
 }
 
+func (v Var) String() string {
+	return fmt.Sprintf("Var: %s\n", string(v))
+}
+
 type Env map[Var]float64
 
 type literal float64
@@ -33,6 +42,10 @@ func (l literal) Eval(Env) float64 {
 
 func (l literal) Check(map[Var]bool) error {
 	return nil
+}
+
+func (l literal) String() string {
+	return fmt.Sprintf("Literal: %f\n", l)
 }
 
 type unary struct {
@@ -55,6 +68,21 @@ func (u unary) Check(vars map[Var]bool) error {
 		return fmt.Errorf("unexpected unary op %q", u.op)
 	}
 	return u.x.Check(vars)
+}
+
+func (u unary) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("%*s\n", wraps, "unary"))
+	wraps += len("unary") / 2
+	defer func() {
+		wraps -= len("unary") / 2
+	}()
+	// 2 line branches
+	drawBranch(&buf)
+	buf.WriteString(fmt.Sprintf("Op: %c\n", u.op))
+	drawBranch(&buf)
+	drawSubExpr(&buf, u.x)
+	return buf.String()
 }
 
 type binary struct {
@@ -84,6 +112,25 @@ func (b binary) Check(vars map[Var]bool) error {
 		return err
 	}
 	return b.y.Check(vars)
+}
+
+func (b binary) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("%*s\n", wraps, "binary"))
+	wraps += len("binary") / 2
+	defer func() {
+		wraps -= len("binary") / 2
+	}()
+	// 2 line branches
+	drawBranch(&buf)
+	drawSubExpr(&buf, b.x)
+
+	drawBranch(&buf)
+	buf.WriteString(fmt.Sprintf("Op: %c\n", b.op))
+
+	drawBranch(&buf)
+	drawSubExpr(&buf, b.y)
+	return buf.String()
 }
 
 type call struct {
@@ -119,4 +166,36 @@ func (c call) Check(vars map[Var]bool) error {
 	return nil
 }
 
+func (c call) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("%*s\n", wraps, "call"))
+	wraps += len("call") / 2
+	defer func() {
+		wraps -= len("call") / 2
+	}()
+	// 2 line branches
+	drawBranch(&buf)
+	buf.WriteString(fmt.Sprintf("Func: %v\n", c.fn))
+	for _, arg := range c.args {
+		drawBranch(&buf)
+		drawSubExpr(&buf, arg)
+	}
+	return buf.String()
+}
+
 var numParams = map[string]int{"pow": 2, "sin": 1, "sqrt": 1}
+
+func drawBranch(buf *bytes.Buffer) {
+	for i := 0; i < 2; i++ {
+		buf.WriteString(fmt.Sprintf("%*s\n", wraps, "|"))
+	}
+	buf.WriteString(fmt.Sprintf("%*s", wraps+1, "--"))
+}
+
+func drawSubExpr(buf *bytes.Buffer, s fmt.Stringer) {
+	wraps += 2
+	defer func() {
+		wraps -= 2
+	}()
+	buf.WriteString(fmt.Sprintf("%v", s))
+}

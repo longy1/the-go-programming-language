@@ -39,3 +39,29 @@ func TestEval(t *testing.T) {
 		}
 	}
 }
+
+func TestAST(t *testing.T) {
+	tests := []struct {
+		expr string
+		env  Env
+		want string
+	}{
+		{"sqrt(A / pi)", Env{"A": 87616, "pi": math.Pi}, "167"},
+		{"pow(x, 3) + pow(y, 3)", Env{"x": 12, "y": 1}, "1729"},
+		{"5 / 9 * (F - 32)", Env{"F": -40}, "-40"},
+	}
+
+	var prevExpr string
+	for _, test := range tests {
+		if test.expr != prevExpr {
+			fmt.Printf("\n%s\n", test.expr)
+			prevExpr = test.expr
+		}
+		expr, err := Parse(test.expr)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		fmt.Printf("%v", expr)
+	}
+}
