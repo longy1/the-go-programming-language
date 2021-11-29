@@ -12,6 +12,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}(conn)
 	go mustCopy2(os.Stdout, conn)
 	mustCopy2(conn, os.Stdin)
 }
