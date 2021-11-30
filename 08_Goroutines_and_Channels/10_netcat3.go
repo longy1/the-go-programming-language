@@ -18,11 +18,6 @@ func main() {
 			log.Print(err)
 		}
 		log.Println("Done")
-		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			if err := tcpConn.CloseRead(); err != nil {
-				log.Print(err)
-			}
-		}
 		done <- struct{}{}
 	}()
 	if _, err := io.Copy(conn, os.Stdin); err != nil {
