@@ -13,8 +13,6 @@ import (
 var sem = make(chan struct{}, 20)
 
 func walkDir3(dir string, waitGroup *sync.WaitGroup, fileSizes chan<- int64) {
-	sem <- struct{}{}
-	defer func() { <-sem }()
 	defer waitGroup.Done()
 	for _, entry := range dirEnt3(dir) {
 		if entry.IsDir() {
@@ -28,6 +26,8 @@ func walkDir3(dir string, waitGroup *sync.WaitGroup, fileSizes chan<- int64) {
 }
 
 func dirEnt3(dir string) []os.FileInfo {
+	sem <- struct{}{}
+	defer func() { <-sem }()
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "du1: %v\n", err)
