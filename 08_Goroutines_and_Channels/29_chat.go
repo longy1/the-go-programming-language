@@ -63,27 +63,29 @@ func main() {
 }
 
 func handleChatConn(conn net.Conn) {
-	defer func(conn net.Conn) {
+	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Println(err)
+			// do nothing
 		}
-	}(conn)
+	}()
 	cli := make(chan string)
+	messageMid := make(chan string)
 	go clientWriter(conn, cli)
+	go timeoutMessageCheck(conn, messageMid)
 
 	who := conn.RemoteAddr().String()
-	messages <- fmt.Sprintf("[%s] %s has arrived",
+	messageMid <- fmt.Sprintf("[%s] %s has arrived",
 		time.Now().Format("Mon Jan 2 15:04:05"), who)
 	entering <- client{cli, who}
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		messages <- fmt.Sprintf("[%s] %s: %s",
+		messageMid <- fmt.Sprintf("[%s] %s: %s",
 			time.Now().Format("Mon Jan 2 15:04:05"), who, scanner.Text())
 	}
 
 	leaving <- client{cli, who}
-	messages <- fmt.Sprintf("[%s] %s has left",
+	messageMid <- fmt.Sprintf("[%s] %s has left",
 		time.Now().Format("Mon Jan 2 15:04:05"), who)
 }
 
@@ -91,6 +93,27 @@ func clientWriter(conn net.Conn, cli <-chan string) {
 	for msg := range cli {
 		if _, err := fmt.Fprintln(conn, msg); err != nil {
 			log.Println(err)
+		}
+	}
+}
+
+// timeoutMessageCheck will Close(conn) when timeout happens
+func timeoutMessageCheck(conn net.Conn, src chan string) {
+	const TimeoutDuration = 10 * time.Second
+	timeout := time.NewTimer(TimeoutDuration)
+	for {
+		select {
+		case msg := <-src:
+			// safety reset timer
+			if !timeout.Stop() {
+				<-timeout.C
+			}
+			timeout.Reset(TimeoutDuration)
+			messages <- msg
+		case <-timeout.C:
+			if err := conn.Close(); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
