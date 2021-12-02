@@ -1,3 +1,4 @@
+// TCP chatroom
 package main
 
 import (
@@ -8,7 +9,10 @@ import (
 	"time"
 )
 
-type client chan<- string
+type client struct {
+	ch   chan<- string
+	name string
+}
 
 var (
 	entering = make(chan client)
@@ -21,13 +25,20 @@ func broadcast() {
 	for {
 		select {
 		case cli := <-entering:
+			// announce to new incoming client
+			var curClients []string
+			for cli := range clients {
+				curClients = append(curClients, cli.name)
+			}
+			cli.ch <- fmt.Sprintf("Welcome, %q in chatroom", curClients)
+
 			clients[cli] = true
 		case cli := <-leaving:
 			delete(clients, cli)
-			close(cli)
+			close(cli.ch)
 		case msg := <-messages:
 			for cli := range clients {
-				cli <- msg
+				cli.ch <- msg
 			}
 		}
 	}
@@ -63,7 +74,7 @@ func handleChatConn(conn net.Conn) {
 	who := conn.RemoteAddr().String()
 	messages <- fmt.Sprintf("[%s] %s has arrived",
 		time.Now().Format("Mon Jan 2 15:04:05"), who)
-	entering <- cli
+	entering <- client{cli, who}
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
@@ -71,7 +82,7 @@ func handleChatConn(conn net.Conn) {
 			time.Now().Format("Mon Jan 2 15:04:05"), who, scanner.Text())
 	}
 
-	leaving <- cli
+	leaving <- client{cli, who}
 	messages <- fmt.Sprintf("[%s] %s has left",
 		time.Now().Format("Mon Jan 2 15:04:05"), who)
 }
