@@ -38,9 +38,21 @@ func broadcast() {
 			close(cli.ch)
 		case msg := <-messages:
 			for cli := range clients {
-				cli.ch <- msg
+				go timeoutSend(cli.ch, msg)
 			}
 		}
+	}
+}
+
+// timeoutSend will simply drop message if client timeout
+func timeoutSend(dst chan<- string, msg string) {
+	const SendTimeout = 1 * time.Second
+	timeout := time.NewTimer(SendTimeout)
+	defer func() { timeout.Stop() }() // terminate Timer goroutine
+
+	select {
+	case dst <- msg:
+	case <-timeout.C:
 	}
 }
 
@@ -99,8 +111,10 @@ func clientWriter(conn net.Conn, cli <-chan string) {
 
 // timeoutMessageCheck will Close(conn) when timeout happens
 func timeoutMessageCheck(conn net.Conn, src chan string) {
-	const TimeoutDuration = 10 * time.Second
-	timeout := time.NewTimer(TimeoutDuration)
+	const MessageTimeout = 10 * time.Second
+	timeout := time.NewTimer(MessageTimeout)
+	defer func() { timeout.Stop() }() // terminate Timer goroutine
+
 	for {
 		select {
 		case msg := <-src:
@@ -108,12 +122,13 @@ func timeoutMessageCheck(conn net.Conn, src chan string) {
 			if !timeout.Stop() {
 				<-timeout.C
 			}
-			timeout.Reset(TimeoutDuration)
+			timeout.Reset(MessageTimeout)
 			messages <- msg
 		case <-timeout.C:
 			if err := conn.Close(); err != nil {
 				log.Println(err)
 			}
+			return
 		}
 	}
 }
