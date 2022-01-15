@@ -1,7 +1,9 @@
 // Package word provides utilities for word games.
 package word
 
-import "unicode"
+import (
+	"unicode"
+)
 
 // IsPalindrome reports whether s reads the same forward and backward.
 // Ignore case and non-letters.
